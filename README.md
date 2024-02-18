@@ -52,7 +52,7 @@ MODE=openai
 
 # comma separated model names that you want to support. Users will be able to pick one while querying the data.
 # not applicable to azure openai depolyments
-MODEL_NAME="gpt-4, gpt-3.5-turbo-0125"
+MODEL_NAME=gpt-4, gpt-3.5-turbo-0125
 
 # configurations if you are using openai model directly
 OPENAI_API_KEY=
