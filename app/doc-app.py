@@ -17,19 +17,24 @@ from langchain.chains import RetrievalQA
 from langchain_openai import ChatOpenAI
 from langchain_openai import AzureOpenAIEmbeddings
 from langchain_openai import AzureChatOpenAI
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.chat_models import ChatOllama
+from langchain.prompts import PromptTemplate
 
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 agent = None
 temperature = 0
-models = [model for model in os.getenv('MODEL_NAME').split(',') if model]
+model = os.getenv('MODEL_NAME')
 op_mode = os.getenv("MODE")
 openai_api_version = os.getenv("AZURE_OPENAI_VERSION")
 azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 if op_mode == "openai":
+    persist_directory = 'docs/openai'
     embedding = OpenAIEmbeddings()
-    llm = ChatOpenAI(model_name="gpt-4", temperature=0)
+    llm = ChatOpenAI(model_name=model, temperature=0)
 elif op_mode == "azure-openai":
+    persist_directory = 'docs/openai'
     embedding = AzureOpenAIEmbeddings(
         azure_deployment=azure_deployment,
         openai_api_version=openai_api_version,
@@ -38,16 +43,23 @@ elif op_mode == "azure-openai":
         openai_api_version=openai_api_version,
         azure_deployment=azure_deployment,
     )
+elif op_mode == "ollama":
+    persist_directory = 'docs/ollama'
+    embedding = OllamaEmbeddings()
+    llm = ChatOllama(model=model)
 
 
 def init():
 
-    if not os.path.exists('docs'):
-        os.makedirs('docs')
     if not os.path.exists('files'):
         os.makedirs('files')
+    if not os.path.exists('docs'):
+        os.makedirs('docs')
+    if not os.path.exists('docs/openai'):
+        os.makedirs('docs/openai')
+    if not os.path.exists('docs/ollama'):
+        os.makedirs('docs/ollama')
 
-    persist_directory = 'docs/'
     vectordb = Chroma(
         embedding_function=embedding,
         persist_directory=persist_directory
@@ -58,7 +70,7 @@ def init():
 def process_files(files):
     for f in files:
         bytes_data = f.getvalue()
-        uploaded_file_path = os.path.join("docs", f.name)
+        uploaded_file_path = os.path.join("files", f.name)
         with open(uploaded_file_path, "wb") as f:
             f.write(bytes_data)
 
@@ -115,13 +127,29 @@ def process_files(files):
         else:
             print(f'Unsupported file extension: {file_extension}')
 
-        persist_directory = 'docs/'
-
         vectordb = Chroma.from_documents(
             documents=splits,
             embedding=embedding,
             persist_directory=persist_directory
         )
+
+
+def get_source(docs):
+    sources = []
+    for doc in docs:
+        source = ""
+        if doc.metadata['source'].endswith('.pdf'):
+            source += f"- Source: {doc.metadata['source']} : Page {doc.metadata['page']}"
+        if doc.metadata['source'].endswith('.csv'):
+            source += f"- Source: {doc.metadata['source']} : Row {doc.metadata['row']}"
+        sources.append(source)
+
+    # convert to markdown
+    source = ""
+    for s in sources:
+        source += f"- {s} \n"
+
+    return source
 
 
 def retrieve_docs(vectordb, q):
@@ -147,10 +175,9 @@ def retrieve_docs(vectordb, q):
 
 
 def chatQA(vectordb, llm, question):
-    from langchain.prompts import PromptTemplate
 
     # Build prompt
-    template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer. Use three sentences maximum. Keep the answer as concise as possible. Always say "thanks for asking!" at the end of the answer. 
+    template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer. Keep the answer as concise as possible. 
     {context}
     Question: {question}
     Helpful Answer:"""
@@ -188,6 +215,7 @@ if files_selected:
     if u_data.button("Process"):
         with st.spinner(text='Processing your documents, please wait...'):
             process_files(files_selected)
+            st.info('Processing done.')
 
 
 vectordb = init()
@@ -209,8 +237,11 @@ if prompt := st.chat_input("Ask something"):
     with st.spinner(text='Thinking...'):
         result = chatQA(vectordb, llm, prompt)
         print(result)
+        sources = get_source(result["source_documents"])
+
         st.session_state.messages.append(
-            {"role": "assistant", "content": result['result']})
+            {"role": "assistant", "content": f"{result['result']} \n {sources}"})
 
     with st.chat_message("assistant"):
-        st.markdown(result['result'])
+        sources = get_source(result["source_documents"])
+        st.markdown(f"{result['result']} \n {sources}")
