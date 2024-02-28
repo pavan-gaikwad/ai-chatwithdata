@@ -20,6 +20,9 @@ from langchain_openai import AzureChatOpenAI
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.chat_models import ChatOllama
 from langchain.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
+
 
 openai.api_key = os.environ['OPENAI_API_KEY']
 
@@ -47,6 +50,11 @@ elif op_mode == "ollama":
     persist_directory = 'docs/ollama'
     embedding = OllamaEmbeddings()
     llm = ChatOllama(model=model)
+elif op_mode == "groq":
+    persist_directory = 'docs/groq'
+    embedding = OllamaEmbeddings() # use ollama embeddings for now
+    # todo: add option to configure separate embedding models
+    llm = ChatGroq(temperature=0, model_name=model)
 
 
 def init():
@@ -59,6 +67,8 @@ def init():
         os.makedirs('docs/openai')
     if not os.path.exists('docs/ollama'):
         os.makedirs('docs/ollama')
+    if not os.path.exists('docs/groq'):
+        os.makedirs('docs/groq')
 
     vectordb = Chroma(
         embedding_function=embedding,
