@@ -150,8 +150,10 @@ def get_source(docs):
         source = ""
         if doc.metadata['source'].endswith('.pdf'):
             source += f"- Source: {doc.metadata['source']} : Page {doc.metadata['page']}"
-        if doc.metadata['source'].endswith('.csv'):
+        elif doc.metadata['source'].endswith('.csv'):
             source += f"- Source: {doc.metadata['source']} : Row {doc.metadata['row']}"
+        else:
+            source += f"- Source: {doc.metadata['source']}"
         sources.append(source)
 
     # convert to markdown
