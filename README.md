@@ -14,19 +14,22 @@ Replace `your_image_name` with the name you want to give to your Docker image.
 
 ## Running the Docker Image
 
-After building the Docker image, you can run it using the following command:
+After building the Docker image, you can run it using the following command. 
+The command mounts docs and files directories to the docker container so you can save your embeddings to disk.
+
+Ensure you have docs and files directories created and configured accordingly.
 
 ```bash
-docker run -p 8501:8501 --env-file envfile your_image_name
+docker run --env-file=.env -v $(pwd)/docs:/app/docs -v $(pwd)/files:/app/files -p 8501:8501  <your image>
 ```
 
-This command will start a Docker container from your image and map port 8501 of the container to port 8501 of your host machine. The `--env-file envfile` option is used to pass environment variables from the `envfile` file to the Docker container.
+This command will start a Docker container from your image and map port 8501 of the container to port 8501 of your host machine. The `--env-file .env` option is used to pass environment variables from the `.env` file to the Docker container.
 
 # Environment Variables
 
 The `envfile` file contains several environment variables that are used to configure the application. Here's a brief description of each variable:
 
-- `MODE`: This variable determines the mode of operation. Supported modes are "azure-openai" and "openai". If you are using Azure OpenAI installation, set this to "azure-openai". Otherwise, leave it as "openai".
+- `MODE`: This variable determines the mode of operation. Supported modes are "azure-openai", "groq" and "openai". If you are using Azure OpenAI installation, set this to "azure-openai". Otherwise, leave it as "openai". 
 
 - `MODEL_NAME`: This is a comma-separated list of model names that you want to support. Users will be able to pick one while querying the data. This is not applicable to Azure OpenAI deployments.
 
@@ -39,6 +42,7 @@ The `envfile` file contains several environment variables that are used to confi
 - `AZURE_OPENAI_ENDPOINT`: This is the endpoint for Azure configurations.
 
 - `AZURE_OPENAI_VERSION`: This is the version for Azure configurations.
+- `GROQ_API_KEY` : This is the api key for Groq API
 
 Remember to replace the placeholder values in the `envfile` file with your actual keys and configurations before running the Docker container.
 

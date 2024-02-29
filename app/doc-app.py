@@ -23,6 +23,8 @@ from langchain.prompts import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
+from dotenv import load_dotenv
+load_dotenv()
 
 openai.api_key = os.environ['OPENAI_API_KEY']
 
@@ -52,7 +54,7 @@ elif op_mode == "ollama":
     llm = ChatOllama(model=model)
 elif op_mode == "groq":
     persist_directory = 'docs/groq'
-    embedding = OllamaEmbeddings() # use ollama embeddings for now
+    embedding = OllamaEmbeddings()  # use ollama embeddings for now
     # todo: add option to configure separate embedding models
     llm = ChatGroq(temperature=0, model_name=model)
 
@@ -248,7 +250,6 @@ if prompt := st.chat_input("Ask something"):
     # Show a spinner during a process
     with st.spinner(text='Thinking...'):
         result = chatQA(vectordb, llm, prompt)
-        print(result)
         sources = get_source(result["source_documents"])
 
         st.session_state.messages.append(
