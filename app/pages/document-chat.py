@@ -20,7 +20,6 @@ from langchain_openai import AzureChatOpenAI
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.chat_models import ChatOllama
 from langchain.prompts import PromptTemplate
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
 from dotenv import load_dotenv

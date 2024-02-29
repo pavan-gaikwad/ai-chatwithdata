@@ -6,11 +6,11 @@ from langchain_openai import AzureChatOpenAI
 from langchain_community.llms import Ollama
 from langchain_community.agent_toolkits import create_sql_agent
 from utils import load_csv_to_db
-
+from langchain_groq import ChatGroq
 
 agent = None
 temperature = 0
-models = [model for model in os.getenv('MODEL_NAME').split(',') if model]
+model = os.getenv('MODEL_NAME')
 op_mode = os.getenv("MODE")
 openai_api_version = os.getenv("AZURE_OPENAI_VERSION")
 azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
@@ -43,7 +43,7 @@ if db:
     if op_mode.lower() == "openai":
         # Can be used wherever a "file-like" object is accepted:
         agent = create_sql_agent(
-            ChatOpenAI(temperature=temperature, model=models[0]),
+            ChatOpenAI(temperature=temperature, model=model),
             db=db,
             verbose=True
         )
@@ -56,7 +56,11 @@ if db:
             db=db)
 
     if op_mode.lower() == "ollama":
-        agent = create_sql_agent(Ollama(model="llama2"), db=db)
+        agent = create_sql_agent(Ollama(model=model), db=db)
+
+    if op_mode.lower() == "groq":
+        llm = ChatGroq(temperature=0, model_name=model)
+        agent = create_sql_agent(llm, db=db)
 
     st.info(f'Chatting with file: {uploaded_file.name}')
     file_ready = True
