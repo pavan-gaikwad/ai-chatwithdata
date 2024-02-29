@@ -1,18 +1,11 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
-from langchain.schema import AIMessage, HumanMessage
-import openai
 import os
-from langchain.agents.agent_types import AgentType
-from langchain_experimental.agents.agent_toolkits import create_csv_agent
-from langchain_openai import ChatOpenAI, OpenAI
+from langchain_openai import ChatOpenAI
 from langchain_openai import AzureChatOpenAI
 from langchain_community.llms import Ollama
 from langchain_community.agent_toolkits import create_sql_agent
-import pandas as pd
-from langchain_community.utilities import SQLDatabase
-from sqlalchemy import create_engine
-import uuid
+from utils import load_csv_to_db
 
 
 agent = None
@@ -21,7 +14,7 @@ models = [model for model in os.getenv('MODEL_NAME').split(',') if model]
 op_mode = os.getenv("MODE")
 openai_api_version = os.getenv("AZURE_OPENAI_VERSION")
 azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-
+db = None
 st.set_page_config(page_title="Chat with csv")
 st.markdown("""
     <style>
@@ -35,29 +28,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 st.title('Chat with your csv data')
-file_ready = False
 
-if not file_ready:
-    uploaded_file = st.file_uploader('File uploader', type=["csv"])
+chat, u_data = st.tabs(["Chat", "Upload Data"])
 
+with u_data:
+    uploaded_file = st.file_uploader(
+        'File uploader', type=["csv"])
+    if uploaded_file:
+        st.info(f"Active file is set to: {uploaded_file.name}")
+        db = load_csv_to_db(uploaded_file)
+        st.info("File ready to start")
 
-def load_csv_to_db(file_path):
-    df = pd.read_csv(file_path)
-
-    file_name = os.path.splitext(file_path.name)[0]
-    if os.path.exists(f"files/{file_name}.db"):
-        os.remove(f"files/{file_name}.db")
-    engine = create_engine(f"sqlite:///files/{file_name}.db")
-    df.to_sql(file_name, engine, index=False)
-    db = SQLDatabase(engine=engine)
-    print(db.get_usable_table_names())
-    return db
-
-
-if uploaded_file is not None:
-
-    db = load_csv_to_db(uploaded_file)
-
+if db:
     if op_mode.lower() == "openai":
         # Can be used wherever a "file-like" object is accepted:
         agent = create_sql_agent(
@@ -76,29 +58,36 @@ if uploaded_file is not None:
     if op_mode.lower() == "ollama":
         agent = create_sql_agent(Ollama(model="llama2"), db=db)
 
-    st.info('File ready to chat.')
+    st.info(f'Chatting with file: {uploaded_file.name}')
     file_ready = True
 
-    if op_mode == "openai":
-        model = st.selectbox('Select Model', models)
+    if "csv_messages" not in st.session_state:
+        st.session_state.csv_messages = []
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    for message in st.session_state.messages:
+    for message in st.session_state.csv_messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
     if prompt := st.chat_input("What is up?"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.csv_messages.append(
+            {"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         # Show a spinner during a process
         with st.spinner(text='Thinking...'):
-            response = agent.invoke(prompt)
+            response = {}
+            try:
+                response = agent.invoke(prompt)
+            except ValueError as e:
+                print(e)
+                if "Could not parse LLM output:" in str(e):
+                    result = str(e).split("Could not parse LLM output:")
+                    response['output'] = result[1]
+                else:
+                    response['output'] = "LLM could not understand or parse your question."
 
-        st.session_state.messages.append(
+        st.session_state.csv_messages.append(
             {"role": "assistant", "content": response['output']})
 
         with st.chat_message("assistant"):
