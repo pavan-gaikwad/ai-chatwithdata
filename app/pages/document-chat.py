@@ -20,7 +20,6 @@ from langchain_openai import AzureChatOpenAI
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.chat_models import ChatOllama
 from langchain.prompts import PromptTemplate
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
 from dotenv import load_dotenv
@@ -235,15 +234,15 @@ if files_selected:
 vectordb = init()
 
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "doc_messages" not in st.session_state:
+    st.session_state.doc_messages = []
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+for doc_message in st.session_state.doc_messages:
+    with st.chat_message(doc_message["role"]):
+        st.markdown(doc_message["content"])
 
 if prompt := st.chat_input("Ask something"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.doc_messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -252,7 +251,7 @@ if prompt := st.chat_input("Ask something"):
         result = chatQA(vectordb, llm, prompt)
         sources = get_source(result["source_documents"])
 
-        st.session_state.messages.append(
+        st.session_state.doc_messages.append(
             {"role": "assistant", "content": f"{result['result']} \n {sources}"})
 
     with st.chat_message("assistant"):
