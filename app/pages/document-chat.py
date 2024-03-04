@@ -33,6 +33,8 @@ model = os.getenv('MODEL_NAME')
 op_mode = os.getenv("MODE")
 openai_api_version = os.getenv("AZURE_OPENAI_VERSION")
 azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+azure_embeddings_deployment = os.getenv(
+    "AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT_NAME")
 if op_mode == "openai":
     persist_directory = 'docs/openai'
     embedding = OpenAIEmbeddings()
@@ -40,7 +42,7 @@ if op_mode == "openai":
 elif op_mode == "azure-openai":
     persist_directory = 'docs/openai'
     embedding = AzureOpenAIEmbeddings(
-        azure_deployment=azure_deployment,
+        azure_deployment=azure_embeddings_deployment,
         openai_api_version=openai_api_version,
     )
     llm = AzureChatOpenAI(
