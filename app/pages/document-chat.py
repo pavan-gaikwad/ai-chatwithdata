@@ -35,6 +35,8 @@ openai_api_version = os.getenv("AZURE_OPENAI_VERSION")
 azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 azure_embeddings_deployment = os.getenv(
     "AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT_NAME")
+chunk_size = int(os.getenv("CHUNK_SIZE"))
+chunk_overlap = int(os.getenv("CHUNK_OVERLAP"))
 if op_mode == "openai":
     persist_directory = 'docs/openai'
     embedding = OpenAIEmbeddings()
@@ -94,8 +96,8 @@ def process_files(files):
             loader = CSVLoader(uploaded_file_path)
             data = loader.load()
             r_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=450,
-                chunk_overlap=150
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
             )
             splits = r_splitter.split_documents(data)
 
@@ -104,8 +106,8 @@ def process_files(files):
             loader = UnstructuredWordDocumentLoader(uploaded_file_path)
             data = loader.load()
             r_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=450,
-                chunk_overlap=150
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
             )
             splits = r_splitter.split_documents(data)
         elif file_extension == '.md':
@@ -113,8 +115,8 @@ def process_files(files):
             loader = UnstructuredMarkdownLoader(uploaded_file_path)
             data = loader.load()
             r_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=450,
-                chunk_overlap=150
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
             )
             splits = r_splitter.split_documents(data)
 
@@ -123,8 +125,8 @@ def process_files(files):
             loader = PyPDFLoader(uploaded_file_path)
             data = loader.load()
             r_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=450,
-                chunk_overlap=150
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
             )
             splits = r_splitter.split_documents(data)
 
@@ -133,8 +135,8 @@ def process_files(files):
             loader = TextLoader(uploaded_file_path)
             data = loader.load()
             r_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=450,
-                chunk_overlap=150
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
             )
             splits = r_splitter.split_documents(data)
         else:
