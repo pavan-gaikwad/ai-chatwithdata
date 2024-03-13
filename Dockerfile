@@ -4,6 +4,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN sed -i 's/http:/https:/g' /etc/apt/sources.list.d/debian.sources
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
